@@ -1,0 +1,481 @@
+@model Elpis.Signal.Dashboard.Web.Models.ValveCertificateViewModel
+
+@{
+    ViewBag.Title = "Edit";
+}
+@*<link href="~/Content/Site.css" rel="stylesheet" />*@
+@section scripts{
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.9/jquery-ui.js"></script>
+    <link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.9/themes/blitzer/jquery-ui.css" rel="stylesheet" type="text/css" />
+
+    <!--DatePicker-->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="/resources/demos/style.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <!--   Tiny DateTime Picker -->
+    <link href="~/Content/TinyDateTimePicker/datePicker.css" rel="stylesheet" />
+    <link href="~/Content/TinyDateTimePicker/themes/white/datePicker.css" rel="stylesheet" />
+    <script src="~/Content/TinyDateTimePicker/demo/events.js"></script>>
+    <!-- <script type="text/javascript" src="datePicker.min.js"></script> -->
+    <script src="~/Content/TinyDateTimePicker/calendar.js"></script>
+    <script src="~/Content/TinyDateTimePicker/datePicker.js"></script>
+    <script src="~/Content/TinyDateTimePicker/tinyDateTimePicker.js"></script>
+
+
+    @Scripts.Render("~/bundles/jqueryval")
+    <!--Pdf Conversion Plug-ins for High Chart -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/canvg/1.4/canvg.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
+
+    <!--SignalR-->
+    <script src="~/Scripts/jquery.signalR-2.2.2.js"></script>
+    <script src="~/SignalR/hubs"></script>
+    <script src="~/Scripts/SignalScripts/SignalConnectScript.js"></script>
+
+
+    <!--  High Chart-->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+    <script src="~/Scripts/SignalScripts/SignalGenScript.js"></script>
+    <script src="~/Scripts/SignalScripts/SignalCertificateScript.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var xAxisSignal = $("#xAxisSignal option:selected").val();
+            var yAxisSignal = $("#yAxisSignal option:selected").val();
+            var fromDate = $("#ValveCertificateData_FromDate").val();
+            var toDate = $("#ValveCertificateData_ToDate").val();
+            var deviceID = $('#ValveCertificateData_DeviceID').val();
+            //fetchSignals();
+            renderGraph(xAxisSignal, yAxisSignal, fromDate, toDate, deviceID);
+        });
+    </script>
+}
+
+
+@using (Html.BeginForm())
+{
+    @*@Html.AntiForgeryToken()*@
+
+    <div class="form-horizontal main-panel MainPannel">
+
+        <div class="content">
+            <div class="container-fluid">
+                <div class="list-save">
+                    <div>
+                        <a href=@Url.Action("Index")>
+                        <span class="glyphicon glyphicon-list glyphicon_big" style="margin-right: 10px;">List</span>
+                        </a>
+                        <button type="submit" id="btnUpdate" style="border:none;color:white;background:transparent;" onclick="return GetSvgData();">
+                        <span class="glyphicon glyphicon-floppy-save glyphicon_big">Update</span>
+                        </button>
+                        @{
+                            Html.RenderPartial("_PartialStatusMessage");
+                        }
+
+                    </div>
+                </div>
+
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                       
+                        <div class="card signalBox_gainsboro">
+                            <div class="header">
+                                <h4 class="title">Certificate Data</h4>
+                                <p class="category">System Info  </p>
+                            </div>
+
+                            <div class="content">
+                                <div class="col-md-6">
+
+                                    <dl>
+                                        <dt>
+                                            Certificate Serial No
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.RowKey, new { @readonly = "readonly", @class = "form-control form-Bgcolor" })
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.DeviceID)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.DeviceName, new { @readonly = "readonly", @class = "form-control form-Bgcolor" })
+                                        </dd>
+                                    </dl>
+                                </div> 
+
+                                <div>
+                                    <dl>
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Client)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Client, new { @readonly = "readonly", @class = "form-control form-Bgcolor" })
+
+                                        </dd>
+                                        @*<dt>
+                                                @Html.DisplayNameFor(model => model.ValveCertificateData.CertificateNo)
+                                            </dt>
+
+                                            <dd>
+                                                @Html.TextBoxFor(model => model.ValveCertificateData.CertificateNo, new { @readonly = "readonly", @class = "form-control form-Bgcolor" })
+
+
+                                            </dd>*@
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="footer" style="margin-top:9%;">
+
+                                <hr>
+                                <div class="stats">
+                                    <i class="ti-reload"></i> Pressure Settings
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card signalBox_gainsboro">
+                            <div class="header">
+                                <h4 class="title">Valve Data </h4>
+                                <p class="category">General Valve Info</p>
+                            </div>
+                            <div class="content">
+                                <div class="col-md-6">
+                                    @Html.HiddenFor(model => model.ValveCertificateData.PartitionKey)
+                                    @Html.HiddenFor(model => model.ValveCertificateData.RowKey)
+                                    @Html.HiddenFor(model => model.ValveCertificateData.DeviceID)
+                                    @Html.HiddenFor(model => model.ValveCertificateData.Timestamp)
+                                    @Html.HiddenFor(model => model.ValveCertificateData.Client)
+
+                                    @Html.HiddenFor(model => model.ValveCertificateData.ETag)
+                                    <dl>
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Manufacturer)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Manufacturer, new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.Manufacturer, "", new { @class = "text-danger" })
+
+                                        </dd>
+
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.TagNo)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.TagNo, new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.TagNo, "", new { @class = "text-danger" })
+
+                                        </dd>
+
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Type)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Type, new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.Type, "", new { @class = "text-danger" })
+
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Model)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Model, new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.Model, "", new { @class = "text-danger" })
+
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.SerialNo)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.SerialNo, new { @class = "form-control" })
+
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.SerialNo, "", new { @class = "text-danger" })
+                                        </dd>
+
+                                    </dl>
+
+                                </div>
+
+                                <div>
+
+                                    <dl>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Size)
+                                        </dt>
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Size, new { @class = "form-control" })
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Rating)
+                                        </dt>
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Rating, new { @class = "form-control" })
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Fluid)
+                                        </dt>
+                                        <dd>
+
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Fluid, new { @class = "form-control" })
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.SetPressure)
+
+                                        </dt>
+
+                                        <dd>
+                                            @Html.DropDownListFor(model => model.ValveCertificateData.SetPressure,
+new SelectList(Model.DeviceSignalModel, "SignalID", "SignalName", Model.ValveCertificateData.SetPressure),
+"-- Select --", new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.SetPressure, "", new { @class = "text-danger" })
+
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Flow)
+                                        </dt>
+                                        <dd>
+                                            @Html.DropDownListFor(model => model.ValveCertificateData.Flow,
+new SelectList(Model.DeviceSignalModel, "SignalID", "SignalName", Model.ValveCertificateData.Flow),
+"-- Select --", new { @class = "form-control" })
+                                            @Html.HiddenFor(model => model.FlowName)
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.Flow, "", new { @class = "text-danger" })
+
+                                        </dd>
+
+                                    </dl>
+
+                                </div>
+
+                            </div>
+
+                            <div class="footer" style="margin-top:2%;">
+                                <hr />
+                                <div class="stats">
+                                    <i class="ti-reload"></i> Certificate Update
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card signalBox_gainsboro">
+                            <div class="header">
+                                <h4 class="title">Job Data</h4>
+                                <p class="category">General Info on Certificate Job Data
+                            </div>
+                            <div class="content">
+                                <div class="col-md-6">
+                                    <dl>
+                                        <dt class="required">
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.JobNo)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.JobNo, new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.JobNo, "", new { @class = "text-danger" })
+                                        </dd>
+
+                                        <dt class="required">
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.CertificateNo)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.CertificateNo, new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.CertificateNo, "", new { @class = "text-danger" })
+                                        </dd>
+
+                                    </dl>
+                                </div>
+                                <div>
+                                    <dl>
+                                        <dt class="required">
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Date)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Date, new { @class = "form-control  date date-1", placeholder = "Enter To date here...", Value = Model.ValveCertificateData.Date.ToString("yyyy-MM-dd") })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.Date, "", new { @class = "text-danger" })
+                                        </dd>
+
+                                        <dt class="required">
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Job)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.Job, new { @class = "form-control" })
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.Job, "", new { @class = "text-danger" })
+                                        </dd>
+
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="footer">
+
+                                <hr>
+                                <div class="stats">
+                                    <i class="ti-reload"></i> Pressure Settings
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card signalBox_gainsboro">
+                            <div class="header">
+                                <h4 class="title">Test Data</h4>
+                                <p class="category">Set Pressure Details</p>
+                            </div>
+                            <div class="content">
+                                <div class="col-md-6">
+                                    <div class="test-data-sub-head">
+                                        <p class="category" style="margin-top:-15px;">Set Pressure Test</p>
+                                    </div>
+                                    <dl>
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.FoundSetPressure)
+                                        </dt>
+                                        <dd>
+                                            @Html.DropDownListFor(model => model.ValveCertificateData.FoundSetPressure,
+new SelectList(Model.DeviceSignalModel, "SignalID", "SignalName", Model.ValveCertificateData.FoundSetPressure),
+"-- Select --", new { @class = "form-control" })
+                                            @Html.HiddenFor(model => model.FoundSetPressureName)
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.FoundSetPressure, "", new { @class = "text-danger" })
+
+                                        </dd>
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.ResetPressure)
+                                        </dt>
+                                        <dd>
+                                            @Html.DropDownListFor(model => model.ValveCertificateData.ResetPressure,
+new SelectList(Model.DeviceSignalModel, "SignalID", "SignalName", Model.ValveCertificateData.ResetPressure),
+"-- Select --", new { @class = "form-control" })
+                                            @Html.HiddenFor(model => model.ResetPressureName)
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.ResetPressure, "", new { @class = "text-danger" })
+
+                                        </dd>
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.TestMethod)
+                                        </dt>
+                                        <dd>
+
+                                            @Html.TextBoxFor(model => model.ValveCertificateData.TestMethod, new { @class = "form-control" })
+                                        </dd>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.ResultPressureTest)
+
+                                        </dt>
+
+                                        <dd>
+                                            @Html.DropDownListFor(model => model.ValveCertificateData.ResultPressureTest, new List<SelectListItem>
+                                                                                                                                                                                                                                           {
+                                                                                                                                        new SelectListItem{ Text="Pass", Value = "Pass" },
+                                                                                                                                        new SelectListItem{ Text="Fail", Value = "Fail" },
+                                                                                                                                        }, "-- Select --", new { @class = "form-control" })
+                                        </dd>
+
+                                    </dl>
+                                </div>
+                                <div>
+                                    <div class="test-data-sub-head">
+                                        <p class="category" style="margin-top:-15px;">Seat Tightness Test</p>
+                                    </div>
+                                    <dl>
+
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.Leakage)
+                                        </dt>
+
+                                        <dd>
+                                            @Html.DropDownListFor(model => model.ValveCertificateData.Leakage,
+new SelectList(Model.DeviceSignalModel, "SignalID", "SignalName", Model.ValveCertificateData.Leakage),
+"-- Select --", new { @class = "form-control" })
+                                            @Html.HiddenFor(model => model.LeakageName)
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.Leakage, "", new { @class = "text-danger" })
+
+                                        </dd>
+                                        <dt>
+                                            @Html.DisplayNameFor(model => model.ValveCertificateData.TestPressure)
+                                        </dt>
+                                        <dd>
+                                            @Html.DropDownListFor(m => m.ValveCertificateData.TestPressure,
+new SelectList(Model.DeviceSignalModel, "SignalID", "SignalName", Model.ValveCertificateData.TestPressure),
+"-- Select --", new { @class = "form-control" })
+                                            @Html.HiddenFor(model => model.TestPressureName)
+                                            @Html.ValidationMessageFor(model => model.ValveCertificateData.TestPressure, "", new { @class = "text-danger" })
+
+                                        </dd>
+
+
+
+                                        <dt>@Html.DisplayNameFor(model => model.ValveCertificateData.ResultTightnessTest)</dt>
+                                        <dd>
+                                            @Html.DropDownListFor(model => model.ValveCertificateData.ResultTightnessTest, new List<SelectListItem>
+                                                                                                                                                                                                                               {
+                                                                                                                            new SelectListItem{ Text="Pass", Value = "Pass" },
+                                                                                                                            new SelectListItem{ Text="Fail", Value = "Fail" },
+                                                                                                                            }, "-- Select --", new { @class = "form-control" })
+                                        </dd>
+
+                                    </dl>
+                                </div>
+                            </div>
+                            <div class="footer" style="margin-top:15%;">
+
+                                <hr>
+                                <div class="stats">
+                                    <i class="ti-reload"></i> Pressure Settings
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                @* Graph *@
+                @{
+                    Html.RenderPartial("_Graph",Model);
+                }
+
+            </div>
+
+        </div>
+
+        <div style="visibility:hidden">
+            @Html.TextAreaFor(m => m.SvgData, new { @id = "imgData" })
+        </div>
+
+
+        @(ViewContext.ClientValidationEnabled = true)
+
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+        @{
+            Html.RenderPartial("_Footer");
+        }
+
+    </div>
+}
+

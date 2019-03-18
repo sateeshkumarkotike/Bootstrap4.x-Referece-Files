@@ -1,0 +1,786 @@
+@model Elpis.Signal.Dashboard.Web.Models.DashboardViewModel
+@{
+    ViewBag.Title = System.Web.Configuration.WebConfigurationManager.AppSettings["PageTitle"] + " Dashboard";
+
+}
+
+<style>
+    .rulerAlign .ui-state-default, .ui-widget-content .ui-state-default {
+        background: cadetblue !important;
+    }
+
+    .divResize {
+        /*border: 2px solid;
+        padding: 30px;
+        width: 300px;*/
+        /*resize: horizontal;
+        overflow: auto;*/
+    }
+
+    .panelDiv {
+        /*border: 2px solid;
+        padding: 20px;
+        width: 300px;*/
+        /*resize: vertical;
+        overflow: auto;*/
+    }
+    
+
+
+</style>
+
+
+
+@section scripts{
+
+
+    @Styles.Render("~/Content/sliderpipscss")
+    @Scripts.Render("~/Content/sliderpips")
+
+
+
+    @*<!- -SignalR- ->*@
+    <script src="~/Scripts/jquery.signalR-2.2.2.js"></script>
+    <script src="~/SignalR/hubs"></script>
+    <script src="~/Scripts/SignalScripts/SignalConnectScript.js"></script>
+
+
+
+    @* Angular App *@
+    @*<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.23/angular.min.js"></script>
+        <script src="~/Scripts/SignalScripts/AngularApp/DataApp.js"></script>
+        <script src="~/Scripts/SignalScripts/AngularApp/DataController.js"></script>
+        <script src="~/Scripts/SignalScripts/AngularApp/DataService.js"></script>*@
+
+    <link rel="stylesheet" href="https://bootswatch.com/3/paper/bootstrap.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/0.4.0/gridstack.css" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.0/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.0/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/0.4.0/gridstack.all.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var dModel = @Html.Raw(Json.Encode(Model));
+            makeGauge(dModel.SignalDashboardData);
+            $(".slider").slider().slider("pips");
+            callSliderRulerMaker(dModel.SignalDashboardData);
+
+
+        });
+
+        //Custom Div(Main Panel) 
+        $(document).ready(function () {
+
+            
+            // $(function () { $(".divResize").draggable().resizable(); });
+            $(function () { $(".divResize").resizable(); });
+
+        });
+
+        $(function () {
+         $("#sortable").sortable();
+            //$("#sortable").disableSelection();
+             
+        });
+
+        //End Of CustomDiv
+
+
+        //forColorBOX Dragable and Resizable Properties
+        $(document).ready(function () {
+
+           
+            //$(function () { $(".divResizeColorBox").draggable().resizable(); });
+            $(function () { $(".divResizeColorBox").resizable(); });
+
+        });
+
+        $(function () {
+            //$("#sortableColorBox").disableSelection();
+            $("#sortableColorBox").sortable();
+        });
+
+        //for Ruler 
+        $(document).ready(function () {
+
+            //$(function () {
+            //    $(".resizeRuler").draggable().resizable();
+            //});
+            $(function () { $(".resizeRuler").resizable(); });
+
+        });
+   
+        $(function () {
+            $("#ruler").sortable();
+           // $("#ruler").disableSelection();
+        });
+
+
+        $(function () {
+            $('.grid-stack').gridstack();
+        });
+
+
+        //for guage sortable and dragable properties
+
+        $(document).ready(function () {
+
+            // $(function () { $(".ResizeGuage").draggable().resizable(); });
+            $(function () { $(".ResizeGuage").resizable(); });
+
+        });
+
+        $(function () {
+            $("#sortableGuage").sortable();
+            $("#sortableGuage").disableSelection();
+            // $(".panel").draggable();
+            // $("#sortable").resizable();
+        });
+
+
+
+	//function doGauge() {
+
+	//}
+        function updateLiveGraph(signals) { }
+    </script>
+
+
+
+
+}
+@using (Html.BeginForm("Index", "Home", FormMethod.Post))
+{
+    <div class="MainPannel">
+        <div class="deviceSelect">
+
+            <div class="row-fluid">
+                <div class="span12">
+                    <div class="widget-box">
+                        <div class="widget-title">
+                            <span class="icon">
+                                @*arunsathvik - changes in icon color and setting text*@
+                                <i class="glyphicon glyphicon-signal signalIcon"></i>
+                            </span>
+                            <h5>Settings <code>Custom Selection</code></h5>
+                            <div style="float:right;">
+                                @{
+                                    Html.RenderPartial("_PartialStatusMessage");
+                                }
+                            </div>
+                        </div>
+                        <div class="widget-content">
+                            <div class="controlWrapper">
+                                <div class="control-group first box noTransition device" style="width:12%;">
+                                    @Html.LabelFor(m => m.DeviceID, new { @class = "control-label topSelect" })
+                                    <div class="controls">
+                                        @Html.DropDownListFor(model => model.DeviceID, new SelectList(Model.DeviceList, "PartitionKey", "DeviceName", Model.DeviceID),
+                                                                                       new { @class= "dropDown", @Style = "width:100%" })
+
+                                    </div>
+
+                                </div>
+                                @* Display View Selection *@
+                                <div class="control-group next box noTransition" style="width:12%;">
+                                    <div class="topSelect">View</div>
+                                    <div class="controls">
+                                        @Html.DropDownList("ViewSelect", new List<SelectListItem>
+                                        {
+                                            new SelectListItem{ Text="Custom", Value = "Custom" },
+                                            new SelectListItem{ Text="Bar", Value = "Bar" },
+                                            new SelectListItem{ Text="Ruler", Value = "Ruler" },
+                                            new SelectListItem{ Text="Gauge", Value = "Gauge" },
+                                            }, new {@class= "dropDown", @Style = "width:80%" })
+
+                                    </div>
+                                </div>
+                                @* Signal List *@
+                                <div class="control-group last box noTransition" style="width:58%;">
+                                    @*leftHeader*@
+                                    @*<label id="lblSignalList" class="control-label topSelect">List Of Signals</label>*@
+                                    <div id="signalCheckListBox">
+                                        @{
+                                            Html.RenderPartial("SignalList");
+                                        }
+
+                                    </div>
+                                </div>
+                                @*arun sathvik - button repositioned*@
+                                <div style="height:20px">
+                                </div>
+                                <div class="control-group lastbtn">
+                                    @*<button id="btnGet" type="submit" class="btn btn-success btnstyle">
+                                            <span style="color:white; font-size:large;font-weight:bold">Get </span> <span class="glyphicon glyphicon-circle-arrow-down iconColor"></span>
+                                        </button>*@
+                                    <button class="roundIcon btn btn-default btn-sm greenRoundButton" id="btnGet" style="border: currentColor; border-image: none;" type="submit">
+                                        <span class="glyphicon glyphicon-arrow-right"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-12 settings">
+            <div style="float:right;display:none;">
+                <span style="word-spacing: -15px;" class="glyphicon glyphicon-cog glyphicon_big iconColor">Settings</span>
+                @*<div id="arrowShow">
+                        <shadow class="glyphicon glyphicon-circle-arrow-up glyphicon_big iconColor hidden"></shadow>
+                        <shadow class="glyphicon glyphicon-circle-arrow-down glyphicon_big iconColor "></shadow>
+                    </div>*@
+            </div>
+
+
+
+        </div>
+
+
+        <div class="content">
+
+            <div class="container-fluid">
+
+                @* Row 0 - Signal Custom Boxes *@
+                <div id="Custom" class="row">
+                    <div class="customBox viewBox">
+
+                        <div class="col-sm-12 well">
+
+                            <!-- gridstack.js elements go here -->
+                            <div class="grid-stack" id="sortable">
+
+                                @*Color Box*@
+                                @foreach (var item in Model.SignalDashboardData)
+                                {
+                                    DateTimeOffset updateDate = DateTime.Now;// = null;
+                                    string partitionKey = null; int indexGroup = 0;
+
+                                    <div class="col-lg-3 col-sm-6 col_signal" style="height:250px;">
+
+
+                                        @*<div class="@item.SignalDataModel.First().PartitionKey card">*@
+
+                                        <div class="signalBox card divResize">
+                                            <div class="content ">
+
+                                                @foreach (var modelitem in item)
+                                                {
+                                                    //updateDate = modelitem.SignalData.TimeReceived.ToUniversalTime();
+                                                    updateDate = modelitem.SignalData.TimeReceived;
+                                                    partitionKey = modelitem.SignalData.PartitionKey;
+
+                                                    if (modelitem.SignalView.Signal.SignalGroup == "")
+                                                    {
+                                                        //Non group
+                                                        <div class="row">
+                                                            @* Signal Description *@
+                                                            <div class="row">
+                                                                <div class="col-md-12">
+                                                                    <div class="col-md-11 signalDesc" id="NoGroup">
+                                                                        @modelitem.SignalView.Signal.SignalDescription
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-xs-9">
+                                                                <div class="icon-big icon-warning text-center">
+                                                                    <div class="signalName">@modelitem.SignalView.Signal.SignalName</div>
+                                                                    <div>@Html.HiddenFor(modelitemT => modelitem.IsSelected)</div>
+                                                                    <div>@Html.HiddenFor(modelitemT => modelitem.SignalView.Signal.SignalName)</div>
+                                                                    @*@if(modelitem.SignalView.Signal.SignalOrder%2==0)*@
+                                                                    @*{*@
+                                                                    <div>
+                                                                        @{string signalDisplayType = modelitem.SignalView.Signal.SignalDisplayType; }
+
+                                                                        <div style="@((signalDisplayType != "Bar") ? "display:none" : "")">
+                                                                            <div class="progress" style="height:30px;">
+                                                                                @for (int i = 0; i < modelitem.SignalView.SignalThresholdValueList.Count; i++)
+                                                                                {
+                                                                                    <div id="@(modelitem.SignalData.PartitionKey)_@(i)_pbar" class="progress-bar" role="progressbar" style="width: @(modelitem.CurrentValuePercent[i])%;background-color:#@(modelitem.SignalView.SignalThresholdColorList[i])" aria-valuenow='@(modelitem.SignalThresholdCurrentValueList[i])' aria-valuemin="0" aria-valuemax="100">@(modelitem.SignalThresholdCurrentValueList[i])</div>
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                        <div style="@((signalDisplayType != "Gauge") ? "display:none" : "")">
+                                                                            <div id="@(modelitem.SignalData.PartitionKey)_gauge_2" style="min-width: 155px; max-width: 200px; height: 150px; margin: 0 auto"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                    @*<i class="ti-server"></i>*@
+                                                                    @*else{*@
+                                                                    @*<div><div id="@(modelitem.SignalData.PartitionKey)_gauge" style="min-width: 155px; max-width: 200px; height: 150px; margin: 0 auto"></div></div>*@
+                                                                    @*}*@
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-xs-3">
+                                                                <div class="numbers" style="padding-top:15px">
+                                                                    @*<p>@item.First().Quality</p>*@
+                                                                    <span id="@(modelitem.SignalData.PartitionKey)_signal_valueC" class="signalValue">@modelitem.SignalData.Value</span>
+                                                                    <div class="signalUnit">@modelitem.SignalView.Signal.SignalUnit</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        break;
+                                                    }
+                                                    //grouped
+                                                    <div class="row">
+                                                        <div class="row">
+                                                            <div class="col-md-12">
+                                                                @{if (indexGroup == 0)
+                                                                    {
+                                                                        <div class="col-md-11 signalDesc">
+                                                                            @modelitem.SignalView.Signal.SignalGroup
+                                                                        </div>
+                                                                        indexGroup = 1;
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-xs-9">
+
+                                                            <div class="icon-big icon-warning text-center">
+                                                                <div class="signalName">
+                                                                    @modelitem.SignalView.Signal.SignalName
+                                                                    <div class="signalExtraDesc">@modelitem.SignalView.Signal.SignalDescription</div>
+                                                                </div>
+                                                                <div>@Html.HiddenFor(modelitemT => modelitem.IsSelected)</div>
+                                                                <div>@Html.HiddenFor(modelitemT => modelitem.SignalView.Signal.SignalName)</div>
+                                                                <div>
+                                                                    <div class="progress" style="height:30px;">
+                                                                        @for (int i = 0; i < modelitem.SignalView.SignalThresholdValueList.Count; i++)
+                                                                        {
+
+                                                                            <div id="@(modelitem.SignalData.PartitionKey)_@(i)_pbar" class="progress-bar" role="progressbar" style="width: @(modelitem.CurrentValuePercent[i])%;background-color:#@(modelitem.SignalView.SignalThresholdColorList[i])" aria-valuenow='@(modelitem.SignalThresholdCurrentValueList[i])' aria-valuemin="0" aria-valuemax="100">@(modelitem.SignalThresholdCurrentValueList[i])</div>
+
+                                                                        }
+                                                                    </div>
+
+                                                                </div>
+                                                                @*<i class="ti-server"></i>*@
+
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-xs-3">
+                                                            <div class="numbers" style="padding-top:15px; padding-left: 0px">
+                                                                <span id="@(modelitem.SignalData.PartitionKey)_signal_valueC" class="signalValue">@modelitem.SignalData.Value</span>
+                                                                <div class="signalUnit">@modelitem.SignalView.Signal.SignalUnit</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                @*<div class="@(item.SignalDataModel.First().PartitionKey)_footer footer">*@
+                                                <div class="signalBox_footer footer">
+
+                                                    <div class="stats signalDate">
+                                                        @*<i class="ti-reload"></i>*@
+                                                        @*<span id="@(item.SignalDataModel.First().PartitionKey)_signal_time" class="ti-reload @(item.SignalDataModel.First().PartitionKey)_fore" style="margin-left:-2px;">Updated at @item.SignalDataModel.First().Timestamp.UtcDateTime</span>*@
+                                                        <span id="@(partitionKey)_signal_timeC">@updateDate.ToString()</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+
+
+
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                @*   End Custom Box *@
+
+                @* Row 1 - Signal Color Boxes *@
+                <div id="Bar" class="row">
+                    <div class="colorBox viewBox">
+
+                        <div class="col-sm-12 well">
+
+                            <!-- gridstack.js elements go here -->
+                            <div class="grid-stack " id="sortableColorBox">
+
+                                @*Color Box*@
+                                @foreach (var item in Model.SignalDashboardData)
+                                {
+                                    DateTimeOffset updateDate = DateTime.Now;// = null;
+                                    string partitionKey = null; int indexGroup = 0;
+
+                                    <div class="col-lg-3 col-sm-6 col_signal">
+                                        @*<div class="@item.SignalDataModel.First().PartitionKey card">*@
+                                        <div class="signalBox card divResizeColorBox">
+                                            <div class="content ">
+
+                                                @foreach (var modelitem in item)
+                                                {
+                                                    updateDate = modelitem.SignalData.TimeReceived;
+                                                    partitionKey = modelitem.SignalData.PartitionKey;
+
+                                                    if (modelitem.SignalView.Signal.SignalGroup == "")
+                                                    {
+                                                        //Non group
+                                                        <div class="row">
+                                                            @* Signal Description *@
+                                                            <div class="row">
+                                                                <div class="col-md-12">
+                                                                    <div class="col-md-11 signalDesc" id="NoGroup">
+                                                                        @modelitem.SignalView.Signal.SignalDescription
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-xs-9">
+                                                                <div class="icon-big icon-warning text-center">
+                                                                    <div class="signalName">@modelitem.SignalView.Signal.SignalName</div>
+                                                                    <div>@Html.HiddenFor(modelitemT => modelitem.IsSelected)</div>
+                                                                    <div>@Html.HiddenFor(modelitemT => modelitem.SignalView.Signal.SignalName)</div>
+                                                                    @*@if(modelitem.SignalView.Signal.SignalOrder%2==0)*@
+                                                                    @*{*@
+                                                                    <div>
+                                                                        <div class="progress" style="height:30px;">
+                                                                            @for (int i = 0; i < modelitem.SignalView.SignalThresholdValueList.Count; i++)
+                                                                            {
+                                                                                <div id="@(modelitem.SignalData.PartitionKey)_@(i)_pbar" class="progress-bar" role="progressbar" style="width: @(modelitem.CurrentValuePercent[i])%;background-color:#@(modelitem.SignalView.SignalThresholdColorList[i])" aria-valuenow='@(modelitem.SignalThresholdCurrentValueList[i])' aria-valuemin="0" aria-valuemax="100">@(modelitem.SignalThresholdCurrentValueList[i])</div>
+                                                                            }
+                                                                        </div>
+                                                                    </div>@*}*@
+                                                                    @*<i class="ti-server"></i>*@
+                                                                    @*else{*@
+                                                                    @*<div><div id="@(modelitem.SignalData.PartitionKey)_gauge" style="min-width: 155px; max-width: 200px; height: 150px; margin: 0 auto"></div></div>*@
+                                                                    @*}*@
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-xs-3">
+                                                                <div class="numbers" style="padding-top:15px">
+                                                                    @*<p>@item.First().Quality</p>*@
+                                                                    <span id="@(modelitem.SignalData.PartitionKey)_signal_value" class="signalValue">@modelitem.SignalData.Value</span>
+                                                                    <div class="signalUnit">@modelitem.SignalView.Signal.SignalUnit</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        break;
+                                                    }
+                                                    //grouped
+                                                    <div class="row">
+                                                        <div class="row">
+                                                            <div class="col-md-12">
+                                                                @{if (indexGroup == 0)
+                                                                    {
+                                                                        <div class="col-md-11 signalDesc">
+                                                                            @modelitem.SignalView.Signal.SignalGroup
+                                                                        </div>
+                                                                        indexGroup = 1;
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-xs-9">
+
+                                                            <div class="icon-big icon-warning text-center">
+
+                                                                <div class="signalName">
+                                                                    @modelitem.SignalView.Signal.SignalName
+                                                                    <div class="signalExtraDesc">@modelitem.SignalView.Signal.SignalDescription</div>
+                                                                </div>
+                                                                <div>@Html.HiddenFor(modelitemT => modelitem.IsSelected)</div>
+                                                                <div>@Html.HiddenFor(modelitemT => modelitem.SignalView.Signal.SignalName)</div>
+                                                                <div>
+                                                                    <div class="progress" style="height:30px;">
+                                                                        @for (int i = 0; i < modelitem.SignalView.SignalThresholdValueList.Count; i++)
+                                                                        {
+
+                                                                            <div id="@(modelitem.SignalData.PartitionKey)_@(i)_pbar" class="progress-bar" role="progressbar" style="width: @(modelitem.CurrentValuePercent[i])%;background-color:#@(modelitem.SignalView.SignalThresholdColorList[i])" aria-valuenow='@(modelitem.SignalThresholdCurrentValueList[i])' aria-valuemin="0" aria-valuemax="100">@(modelitem.SignalThresholdCurrentValueList[i])</div>
+
+                                                                        }
+
+                                                                    </div>
+
+                                                                </div>
+                                                                @*<i class="ti-server"></i>*@
+
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-xs-3">
+                                                            <div class="numbers" style="padding-top:15px; padding-left: 0px">
+                                                                <span id="@(modelitem.SignalData.PartitionKey)_signal_value" class="signalValue">@modelitem.SignalData.Value</span>
+                                                                <div class="signalUnit">@modelitem.SignalView.Signal.SignalUnit</div>
+                                                            </div>
+                                                        </div>
+
+
+                                                    </div>
+                                                }
+
+                                                @*<div class="@(item.SignalDataModel.First().PartitionKey)_footer footer">*@
+                                                <div class="signalBox_footer footer">
+
+                                                    <div class="stats signalDate">
+                                                        @*<i class="ti-reload"></i>*@
+                                                        @*<span id="@(item.SignalDataModel.First().PartitionKey)_signal_time" class="ti-reload @(item.SignalDataModel.First().PartitionKey)_fore" style="margin-left:-2px;">Updated at @item.SignalDataModel.First().Timestamp.UtcDateTime</span>*@
+                                                        <span id="@(partitionKey)_signal_time">@updateDate</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                @*   End Color Box *@
+
+
+                @* Row 2 - Ruler Start *@
+                <div id="Ruler" class="row">
+                    <div class="col-lg-12">
+                        <div class="card signalBox_gainsboro" >
+                            <div class="rulerAlign viewBox" id="ruler" style="margin-left:30px;">
+                                @{ var rulerHeight = int.Parse(System.Web.Configuration.WebConfigurationManager.AppSettings["DashboardRulerHeight"]);}
+                                @foreach (var item in Model.SignalDashboardData)
+                                {
+                                    int indexGroup = 0;
+                                    <div class="signalBox_Orange card small resizeRuler" style="float:left;margin-top:-80px;margin-bottom:5px;">
+                                        @foreach (var modelitem in item)
+                                        {
+                                            if (indexGroup == 0)
+                                            {
+                                                <div class="row">
+                                                    <div class="col-md-12">
+                                                        <div class="col-md-11" style="color: white; text-align: right; margin-top: 10px; width: 98%; font-size: 15px;">
+                                                            @modelitem.SignalView.Signal.SignalGroup
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                indexGroup = 1;
+                                            }
+                                            <div class="clubRuler">
+                                                <div class="header" style="height:80px;"> <h4 class="title" style="color:#fff;font-size:1.2vw;">@modelitem.SignalView.Signal.SignalName </h4> </div>
+
+                                                @{int thresholdValueCount = modelitem.SignalThresholdCurrentValueList.FindIndex(t => t == 0);
+                                                    if (thresholdValueCount < 0) { thresholdValueCount = modelitem.SignalView.SignalThresholdValueList.Count(); }
+                                                    else if (thresholdValueCount == 0) { thresholdValueCount = 1; }
+                                                    string classPerc = modelitem.SignalView.SignalThresholdColorList[thresholdValueCount - 1];
+                                                    <div class="content">
+                                                        <div class="classPerc" style="font-size:x-large;height:@(rulerHeight)px;" id="@(modelitem.SignalData.PartitionKey)_Rulerslider">  </div>
+                                                    </div>
+                                                    <div class="footer">
+                                                        <div class="chart-legend" style="font-size:x-large;margin-left:10px;color:#@(classPerc);">
+                                                            <div id='@(modelitem.SignalData.PartitionKey)_signal_valueR'>@modelitem.SignalData.Value</div>
+                                                        </div>
+                                                        <hr>
+                                                        <div class="stats">
+                                                            @*<i class="ti-time"></i>*@
+                                                            <div id='@(modelitem.SignalData.PartitionKey)_signal_timeR' style="margin-left:2px;margin-top:-10px; color:#fff!important;font-size:14px;">
+                                                                @modelitem.SignalData.TimeReceived.ToString()
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+
+                                                }
+                                            </div>
+                                        }
+
+                                    </div>
+                                }
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                @*   End Ruler *@
+
+
+                @* Row 3 - Gauge Start *@
+                <div id="Gauge" class="row">
+                    <div class="guageBox viewBox">
+                        <div class="col-sm-12 well">
+
+                            <!-- gridstack.js elements go here -->
+                            <div class="grid-stack " id="sortableGuage">
+
+                                @*Guage Box*@
+                                @foreach (var item in Model.SignalDashboardData)
+                                {
+                                    DateTimeOffset updateDate = DateTime.Now;// = null;
+                                    string partitionKey = null; int indexGroup = 0;
+
+                                    <div class="col-lg-3 col-sm-6 col_signal">
+                                        @*<div class="@item.SignalDataModel.First().PartitionKey card">*@
+                                        <div class="signalBox card  ResizeGuage">
+                                            <div class="content zooma " >
+
+                                                @foreach (var modelitem in item)
+                                                {
+                                                    updateDate = modelitem.SignalData.TimeReceived;
+                                                    partitionKey = modelitem.SignalData.PartitionKey;
+
+                                                    if (modelitem.SignalView.Signal.SignalGroup == "")
+                                                    //Non group
+                                                    {
+                                                        <div class="row">
+                                                            @* Signal Description *@
+                                                            <div class="row">
+                                                                <div class="col-md-12">
+                                                                    <div class="col-md-11 signalDesc" id="NoGroup">
+                                                                        @modelitem.SignalView.Signal.SignalDescription
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-xs-9">
+                                                                <div class="icon-big icon-warning text-center">
+                                                                    <div class="signalName">@modelitem.SignalView.Signal.SignalName</div>
+                                                                    <div>@Html.HiddenFor(modelitemT => modelitem.IsSelected)</div>
+                                                                    <div>@Html.HiddenFor(modelitemT => modelitem.SignalView.Signal.SignalName)</div>
+                                                                    <div><div id="@(modelitem.SignalData.PartitionKey)_gauge" style="min-width: 155px; max-width: 200px; height: 150px; margin: 0 auto"></div></div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-xs-3">
+                                                                <div class="numbers" style="padding-top:15px">
+                                                                    @*<p>@item.First().Quality</p>*@
+                                                                    <span id="@(modelitem.SignalData.PartitionKey)_signal_valueG" class="signalValue">@modelitem.SignalData.Value</span>
+                                                                    <div class="signalUnit">@modelitem.SignalView.Signal.SignalUnit</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        break;
+                                                    }
+                                                    //grouped
+                                                    <div class="row">
+                                                        <div class="row">
+                                                            <div class="col-md-12">
+                                                                @{if (indexGroup == 0)
+                                                                    {
+                                                                        <div class="col-md-11 signalDesc">
+                                                                            @modelitem.SignalView.Signal.SignalGroup
+                                                                        </div>
+                                                                        indexGroup = 1;
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-xs-9">
+
+                                                            <div class="icon-big icon-warning text-center">
+
+                                                                <div class="signalName">
+                                                                    @modelitem.SignalView.Signal.SignalName
+                                                                    <div class="signalExtraDesc">@modelitem.SignalView.Signal.SignalDescription</div>
+                                                                </div>
+                                                                <div>@Html.HiddenFor(modelitemT => modelitem.IsSelected)</div>
+                                                                <div>@Html.HiddenFor(modelitemT => modelitem.SignalView.Signal.SignalName)</div>
+                                                                <div>
+                                                                    <div class="progress" style="height:30px;">
+                                                                        @for (int i = 0; i < modelitem.SignalView.SignalThresholdValueList.Count; i++)
+                                                                        {
+
+                                                                            <div id="@(modelitem.SignalData.PartitionKey)_@(i)_pbar" class="progress-bar" role="progressbar" style="width: @(modelitem.CurrentValuePercent[i])%;background-color:#@(modelitem.SignalView.SignalThresholdColorList[i])" aria-valuenow='@(modelitem.SignalThresholdCurrentValueList[i])' aria-valuemin="0" aria-valuemax="100">@(modelitem.SignalThresholdCurrentValueList[i])</div>
+
+                                                                        }
+
+                                                                    </div>
+
+                                                                </div>
+                                                                @*<i class="ti-server"></i>*@
+
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-xs-3">
+                                                            <div class="numbers" style="padding-top:15px; padding-left: 0px">
+                                                                <span id="@(modelitem.SignalData.PartitionKey)_signal_valueG" class="signalValue">@modelitem.SignalData.Value</span>
+                                                                <div class="signalUnit">@modelitem.SignalView.Signal.SignalUnit</div>
+                                                            </div>
+                                                        </div>
+
+
+                                                    </div>
+                                                }
+
+                                                @*<div class="@(item.SignalDataModel.First().PartitionKey)_footer footer">*@
+                                                <div class="signalBox_footer footer">
+
+                                                    <div class="stats signalDate">
+                                                        @*<i class="ti-reload"></i>*@
+                                                        @*<span id="@(item.SignalDataModel.First().PartitionKey)_signal_time" class="ti-reload @(item.SignalDataModel.First().PartitionKey)_fore" style="margin-left:-2px;">Updated at @item.SignalDataModel.First().Timestamp.UtcDateTime</span>*@
+                                                        <span id="@(partitionKey)_signal_timeG">@updateDate</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                @*   End Gauge *@
+            </div>
+        </div>
+
+
+        <span id="message"></span>    @*<input id="chkMulti" type="button" value="ChkMulti" />*@
+        @{
+            Html.RenderPartial("_Footer");
+        }
+
+
+    </div>
+
+
+}
+
+
+
+    @*<div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <h2>A gridstacks.js dashboard</h2>
+            </div>
+            <div class="col-sm-12 well primary">*@
+                <!-- gridstack.js elements go here -->
+                @*<div class="grid-stack">
+                    <div class="grid-stack-item" data-gs-x="0" data-gs-y="0" data-gs-width="2" data-gs-height="2">
+                        <div class="grid-stack-item-content panel panel-primary">
+                            <div class="panel-heading">
+                                <h3 class="panel-title">Widget 1</h3>
+                            </div>
+                            <div class=panel-body">
+                                content here
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-stack-item" data-gs-x="2" data-gs-y="0" data-gs-width="2" data-gs-height="2">
+                        <div class="grid-stack-item-content panel panel-success">
+                            <div class="panel-heading">
+                                <h3 class="panel-title">Widget 2</h3>
+                            </div>
+                            <div class=panel-body">
+                                content here
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid-stack-item" data-gs-x="0" data-gs-y="2" data-gs-width="3" data-gs-height="2">
+                        <div class="grid-stack-item-content panel panel-warning">
+                            <div class="panel-heading">
+                                <h3 class="panel-title">Widget 3</h3>
+                            </div>
+                            <div class=panel-body">
+                                content here
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>*@
